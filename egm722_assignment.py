@@ -190,15 +190,21 @@ def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', n
         print(f"Current EPSG: {ndwi_water_polygon.crs.to_epsg()}")
 
         # Transform to EPSG 2157 (Irish Transverse Mercator)
-        undwi_water_polygon = ndwi_water_polygon.to_crs(epsg=2157)
+        ndwi_water_polygon = ndwi_water_polygon.to_crs(epsg=2157)
 
         # Verify the transformation
         print(f"New EPSG: {ndwi_water_polygon.crs.to_epsg()}")
 
         # 5. Save output
-        ndwi_water_polygon.to_file(output_path)
+        ndwi_water_polygon.to_file('ndwi_water_polygon.shp')
         print(f"Surface water polygon saved to {output_path}")
 
+# Clip the water bodies to the SAC boundary
+water_in_sac = ndwi_water_polygon.clip(sac)
+
+# Save the clipped result
+water_in_sac.to_file('water_in_sac.shp')
+print("Clipped water bodies to SAC boundary.")
 
 
 
