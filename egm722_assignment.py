@@ -195,16 +195,20 @@ def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', n
         # Verify the transformation
         print(f"New EPSG: {ndwi_water_polygon.crs.to_epsg()}")
 
-        # 5. Save output
-        ndwi_water_polygon.to_file('ndwi_water_polygon.shp')
+        # Clip the water bodies to the SAC boundary
+
+        water_in_sac = ndwi_water_polygon.clip(sac)
+
+        # Save output
+        ndwi_water_polygon.to_file('ndwi_water.shp')
         print(f"Surface water polygon saved to {output_path}")
 
-# Clip the water bodies to the SAC boundary
-water_in_sac = ndwi_water_polygon.clip(sac)
+        # Save the clipped result
+        water_in_sac.to_file('water_in_sac.shp')
+        print("Clipped water bodies to SAC boundary.")
 
-# Save the clipped result
-water_in_sac.to_file('water_in_sac.shp')
-print("Clipped water bodies to SAC boundary.")
+
+
 
 
 
