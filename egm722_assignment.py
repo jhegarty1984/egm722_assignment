@@ -1,4 +1,5 @@
 import os
+
 # Define Project Database
 os.environ['PROJ_LIB'] = r'C:\Users\hegar\anaconda3\envs\egm722_assignment\Library\share\proj'
 
@@ -11,7 +12,11 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 
 from rasterio.plot import show
-
+from rasterio.features import shapes
+from shapely.geometry import shape
+from rasterio._warp import Resampling
+from rasterio.mask import mask
+from rasterio.warp import calculate_default_transform, reproject
 
 # Define the full file path to the Lough Nillan SAC shapefile
 file_path_sac = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Lough_Nillan_SAC\lough_nillan_sac.shp'
@@ -44,7 +49,7 @@ with rio.open(file_path_clc) as src:
     print(src.crs)
 
 #Reproject CLC to ITM (CRS 2157)
-def reproject_to_itm(file_path_clc, output_path='clc_itm'):
+def reproject_to_itm(file_path_clc, output_path='clc_itm', clc_itm=r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\clc_itm.tif'):
     dst_crs = 'EPSG:2157'
 
     with rio.open(file_path_clc) as src:
@@ -65,25 +70,25 @@ def reproject_to_itm(file_path_clc, output_path='clc_itm'):
         with rio.open(clc_itm, 'w', **kwargs) as dst:
             for i in range(1, src.count + 1):
                 reproject(
-                    source=rasterio.band(src, i),
-                    destination=rasterio.band(dst, i),
+                    source=rio.band(src, i),
+                    destination=rio.band(dst, i),
                     src_transform=src.transform,
                     src_crs=src.crs,
                     dst_transform=transform,
                     dst_crs=dst_crs,
                     resampling=Resampling.nearest  # Use 'bilinear' or 'cubic' for continuous data
                 )
-    print(f"Reprojecting {file_path_clc} to {output_name}")
+    print(f"Reprojecting {file_path_clc} to {clc_itm}")
 
 #Clip CLC to SAC
-def clip_clc(file_path_clc, file_path_sac, output_path= 'clc_clipped'):
+def clip_clc(file_path_clc, file_path_sac, output_path = 'clc_clipped', clc_clipped = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\clc_clipped.tif'):
     # Load the SAC vector data
     sac_df = gpd.read_file(file_path_sac)
 
     # Open the raster data
     with rio.open(file_path_clc) as src:
         # Ensure the vector is in the same CRS as the raster
-        vector_df = vector_df.to_crs(src.crs)
+        vector_df = clc_clipped.to_crs(src.crs)
 
         # Get the geometry from the vector (mask expects a list of shapes)
         shapes = vector_df.geometry.values
@@ -104,3 +109,48 @@ def clip_clc(file_path_clc, file_path_sac, output_path= 'clc_clipped'):
         # Write the clipped raster to disk
         with rio.open(output_path, "w", **out_meta) as dest:
             dest.write(out_image)
+
+# Extract Bog & Heath Habitats
+def extract_habitats(clc_clipped, output_vector_path= 'peatland_habitats', peatland_habitats=r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\peatlands_habitats.shp'):
+    # Codes for Bogs (412) and Heaths (322)
+    target_codes = [412, 322]
+
+    with rio.open(clc_clipped) as src:
+        image = src.read(1)
+        mask = np.isin(image, target_codes)
+
+        # Convert identified pixels to a generator of shapes
+        # We only want shapes where the mask is True (1)
+        results = (
+            {'properties': {'raster_val': v}, 'geometry': s}
+            for i, (s, v) in enumerate(
+            shapes(image, mask=mask, transform=src.transform)
+        )
+        )
+
+        # Create a GeoDataFrame from the shapes
+        geoms = list(results)
+        gdf = gpd.GeoDataFrame.from_features(geoms, crs=src.crs)
+
+        # Dissolve adjacent polygons of the same type (optional but recommended)
+        gdf = gdf.dissolve(by='raster_val').reset_index()
+
+        # Add a label column for clarity
+        label_map = {412: "Peat Bog", 322: "Heathland"}
+        gdf['habitat'] = gdf['raster_val'].map(label_map)
+
+        # Save to Shapefile or GeoPackage
+        gdf.to_file(peatland_habitats)
+        print(f" Habitats saved to {peatland_habitats}")
+
+# Define the full file path to the Sentinel-2 raster data
+
+# Define the path to the specific band files (.jp2)
+base_path_sen2 = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m'
+
+# Specific band (Red, Green & Blue) file names
+blue_path = base_path_sen2 + 'T29UNA_20250521T114401_B02_10m.jp2'
+green_path = base_path_sen2 + 'T29UNA_20250521T114401_B03_10m.jp2'
+red_path = base_path_sen2 + 'T29UNA_20250521T114401_B04_10m.jp2'
+
+
