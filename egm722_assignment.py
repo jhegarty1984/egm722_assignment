@@ -196,7 +196,6 @@ def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', n
         print(f"New EPSG: {ndwi_water_polygon.crs.to_epsg()}")
 
         # Clip the water bodies to the SAC boundary
-
         water_in_sac = ndwi_water_polygon.clip(sac)
 
         # Save output
@@ -207,6 +206,68 @@ def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', n
         water_in_sac.to_file('water_in_sac.shp')
         print("Clipped water bodies to SAC boundary.")
 
+# Define the full file path to DEM raster data
+dem_path = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\corine_land_cover_2018\64554\Results\u2018_clc2018_v2020_20u1_raster100m\u2018_clc2018_v2020_20u1_raster100m\DATA\U2018_CLC2018_V2020_20u1.tif'
+
+
+def extract_steep_slopes(dem_path, output_vector = 'steep_slopes', steep_slopes = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\steep_slopes.shp', threshold_degrees=30):
+    with rio.open(dem_path) as src:
+        # Determine a suitable UTM CRS for the area to get units in meters
+        # This is critical; calculating slope on degrees (EPSG:4326) yields wrong results.
+        lon, lat = src.lnglat()
+        utm_zone = int((lon + 180) / 6) + 1
+        dst_crs = f'EPSG:326{utm_zone}' if lat > 0 else f'EPSG:327{utm_zone}'
+
+        transform, width, height = calculate_default_transform(
+            src.crs, dst_crs, src.width, src.height, *src.bounds)
+
+        # Reproject DEM to UTM
+        dem_data = np.zeros((height, width), dtype='float32')
+        reproject(
+            rio.band(src, 1), dem_data,
+            src_transform=src.transform, src_crs=src.crs,
+            dst_transform=transform, dst_crs=dst_crs,
+            resampling=Resampling.bilinear)
+
+        # Calculate Slope using 2nd order finite difference (Horn's Method)
+        # Copernicus 30m resolution ~ 30m cell size
+        res = transform[0]
+        x, y = np.gradient(dem_data, res)
+        slope_rad = np.arctan(np.sqrt(x ** 2 + y ** 2))
+        slope_deg = np.degrees(slope_rad)
+
+        # Generate Mask and Vectorize
+        mask = (slope_deg > threshold_degrees).astype('int16')
+
+        # Extract shapes where mask is 1
+        results = (
+            {'properties': {'slope': threshold_degrees}, 'geometry': s}
+            for i, (s, v) in enumerate(
+            shapes(mask, mask=(mask == 1), transform=transform)
+        )
+        )
+
+        # Save as a single dissolved polygon
+        gdf = gpd.GeoDataFrame.from_features(list(results), crs=dst_crs)
+        steep_slopes = gdf.dissolve()
+        steep_slopes.to_file(output_vector)
+        print(f"Steep slopes (> {threshold_degrees}°) saved to {output_vector}")
+
+        # Check the EPSG (prints the code, e.g., 32629)
+        print(f"Current EPSG: {steep_slopes.crs.to_epsg()}")
+
+        # Transform to EPSG 2157 (Irish Transverse Mercator)
+        steep_slopes = steep_slopes.to_crs(epsg=2157)
+
+        # Verify the transformation
+        print(f"New EPSG: {steep_slopes.crs.to_epsg()}")
+
+        # Clip the steep slopes to the SAC boundary
+        steep_slopes_in_sac = steep_slopes.clip(sac)
+
+        # Save the clipped result
+        steep_slopes_in_sac.to_file('steep_slopes_in_sac.shp')
+        print("Clipped steep slopes to SAC boundary.")
 
 
 
