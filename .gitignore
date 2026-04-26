@@ -205,3 +205,14 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Ignore all spatial data folders
+Spatial_Data/
+assignment_output_data/
+
+# Ignore all large raster and vector formats
+*.tif
+*.jp2
+*.shp
+*.dbf
+*.shx

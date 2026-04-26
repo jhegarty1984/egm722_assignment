@@ -31,7 +31,7 @@ from matplotlib.lines import Line2D
 
 
 # Define the full file path to the Lough Nillan SAC shapefile
-file_path_sac = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Lough_Nillan_SAC\lough_nillan_sac.shp'
+file_path_sac = r'C:\Users\hegar\egm722_assignment\Spatial_Data\Lough_Nillan_SAC\lough_nillan_sac.shp'
 
 # Load the vector data into a GeoDataFrame named 'sac'
 sac = gpd.read_file(file_path_sac)
@@ -50,7 +50,7 @@ sac_geom = sac_area.geometry.iloc[0]
 sac_area_oriented = shapely.geometry.polygon.orient(sac_geom, sign=1)
 
 # Define the full file path to the Corrine Landcover raster data
-file_path_clc = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\corine_land_cover_2018\64554\Results\u2018_clc2018_v2020_20u1_raster100m\u2018_clc2018_v2020_20u1_raster100m\DATA\U2018_CLC2018_V2020_20u1.tif'
+file_path_clc = r'C:\Users\hegar\egm722_assignment\Spatial_Data\Satellite_Data\corine_land_cover_2018\64554\Results\u2018_clc2018_v2020_20u1_raster100m\u2018_clc2018_v2020_20u1_raster100m\DATA\U2018_CLC2018_V2020_20u1.tif'
 
 # Open the CLC dataset
 with rio.open(file_path_clc) as src:
@@ -61,7 +61,7 @@ with rio.open(file_path_clc) as src:
     print(src.crs)
 
 #Reproject CLC to ITM (CRS 2157)
-def reproject_to_itm(file_path_clc, output_path = 'clc_itm', clc_itm = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\clc_itm.tif'):
+def reproject_to_itm(file_path_clc, output_path = 'clc_itm', clc_itm = r'C:\Users\hegar\egm722_assignment\Spatial_Data\assignment_output_data\clc_itm.tif'):
     dst_crs = ccrs.CRS.from_string('EPSG:2157')
 
     with rio.open(file_path_clc) as src:
@@ -98,7 +98,7 @@ def reproject_to_itm(file_path_clc, output_path = 'clc_itm', clc_itm = r'C:\GIS_
     print(f"Reprojecting {file_path_clc} to {clc_itm}")
 
 #Clip CLC to SAC
-def clip_clc(file_path_clc, file_path_sac, output_path = 'clc_clipped', clc_clipped = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\clc_clipped.tif'):
+def clip_clc(file_path_clc, file_path_sac, output_path = 'clc_clipped', clc_clipped = r'C:\Users\hegar\egm722_assignment\Spatial_Data\assignment_output_data\clc_clipped.tif'):
 
     # Load the SAC vector data
     sac_df = gpd.read_file(file_path_sac)
@@ -129,7 +129,7 @@ def clip_clc(file_path_clc, file_path_sac, output_path = 'clc_clipped', clc_clip
             dest.write(out_image)
 
 # Extract Bog & Heath Habitats
-def extract_habitats(clc_clipped, output_vector_path = 'peatland_habitats', peatland_habitats = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\peatland_habitats.shp'):
+def extract_habitats(clc_clipped, output_vector_path = 'peatland_habitats', peatland_habitats = r'C:\Users\hegar\egm722_assignment\Spatial_Data\assignment_output_data\peatland_habitats.shp'):
     # Codes for Bogs (412) and Heaths (322)
     target_codes = [412, 322]
 
@@ -164,16 +164,16 @@ def extract_habitats(clc_clipped, output_vector_path = 'peatland_habitats', peat
 
 # Define the full file path to the Sentinel-2 raster data
 # Define the path to the specific band files (.jp2)
-base_path_sen2 = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m'
+base_path_sen2 = r'C:\Users\hegar\egm722_assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m'
 
 # Specific band (Red, Green, Blue & NIR) file names
-blue_path = os.path.join(base_path_sen2, r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B02_10m.jp2')
-green_path = os.path.join(base_path_sen2, r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B03_10m.jp2')
-red_path = os.path.join(base_path_sen2, r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B04_10m.jp2')
-nearir_path = os.path.join(base_path_sen2, r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B08_10m.jp2')
+blue_path = os.path.join(base_path_sen2, r'C:\Users\hegar\egm722_assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B02_10m.jp2')
+green_path = os.path.join(base_path_sen2, r'CC:\Users\hegar\egm722_assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B03_10m.jp2')
+red_path = os.path.join(base_path_sen2, r'C:\Users\hegar\egm722_assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B04_10m.jp2')
+nearir_path = os.path.join(base_path_sen2, r'C:\Users\hegar\egm722_assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m\T29UNA_20250521T114401_B08_10m.jp2')
 
 # Calculate NDWI from Sentinel-2 raster data & create vector polygon of surface water bodies
-def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', ndwi_water_bodies = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\ndwi_water_bodies.shp', threshold = 0.2):
+def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', ndwi_water_bodies = r'C:\Users\hegar\egm722_assignment\Spatial_Data\assignment_output_data\ndwi_water_bodies.shp', threshold = 0.2):
     # Open the Green (B3) and NIR (B8) bands
     with rio.open(green_path) as green_src, rio.open(nearir_path) as nearir_src:
         # Read the data as float32 to allow for decimal results and handle NaNs
@@ -230,9 +230,9 @@ def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', n
 
 
 # Define the full file path to DEM raster data
-dem_path = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\corine_land_cover_2018\64554\Results\u2018_clc2018_v2020_20u1_raster100m\u2018_clc2018_v2020_20u1_raster100m\DATA\U2018_CLC2018_V2020_20u1.tif'
+dem_path = r'C:\Users\hegar\egm722_assignment\Spatial_Data\Satellite_Data\corine_land_cover_2018\64554\Results\u2018_clc2018_v2020_20u1_raster100m\u2018_clc2018_v2020_20u1_raster100m\DATA\U2018_CLC2018_V2020_20u1.tif'
 
-def extract_slopes_to_shp(dem_path, output_shp = 'steep_slopes', steep_slopes = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\steep_slopes.shp', threshold=30):
+def extract_slopes_to_shp(dem_path, output_shp = 'steep_slopes', steep_slopes = r'C:\Users\hegar\egm722_assignment\Spatial_Data\assignment_output_data\steep_slopes.shp', threshold=30):
     with rio.open(dem_path) as src:
         res = src.res[0]  # Assuming square pixels
         meta = src.meta
@@ -280,7 +280,7 @@ def extract_slopes_to_shp(dem_path, output_shp = 'steep_slopes', steep_slopes = 
             print("No slopes found above the threshold.")
 
 #Refining Peatland Survey Area
-def refine_peatland_habitats(output_vector_path, clipped_water_path, output_shp, output_refined_path = 'refined_survey_area', refined_survey_area = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\refined_survey_area.shp'):
+def refine_peatland_habitats(output_vector_path, clipped_water_path, output_shp, output_refined_path = 'refined_survey_area', refined_survey_area = r'C:\Users\hegar\egm722_assignment\Spatial_Data\assignment_output_data\refined_survey_area.shp'):
     """
     Excludes surface water and steep slopes from the peatland habitats layer.
     """
@@ -317,7 +317,7 @@ def refine_peatland_habitats(output_vector_path, clipped_water_path, output_shp,
     return refined_gdf
 
 #Generate Map
-def generate_map(refined_gdf, sac_gdf, output_map = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\output_map.pdf'):
+def generate_map(refined_gdf, sac_gdf, output_map = r'C:\Users\hegar\egm722_assignment\Spatial_Data\assignment_output_data\output_map.pdf'):
     # Setup the figure and axis with the ITM projection (EPSG:2157)
     # Use ccrs.TransverseMercator for ITM-like plotting in Cartopy
     itm_proj = ccrs.TransverseMercator(central_longitude=-8.0, central_latitude=53.5,
