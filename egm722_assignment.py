@@ -154,7 +154,7 @@ green_path = base_path_sen2 + 'T29UNA_20250521T114401_B03_10m.jp2'
 red_path = base_path_sen2 + 'T29UNA_20250521T114401_B04_10m.jp2'
 nearir_path = base_path_sen2 + 'T29UNA_20250521T114401_B08_10m.jp2'
 
-# Calculate NDWI from Sentinel-2 raster data
+# Calculate NDWI from Sentinel-2 raster data & create vector polygon of surface water bodies
 def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', ndwi_water_bodies = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\ndwi_water_bodies.shp', threshold = 0.2):
     # Open the Green (B3) and NIR (B8) bands
     with rio.open(green_path) as green_src, rio.open(nearir_path) as nearir_src:
@@ -184,10 +184,19 @@ def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', n
         gdf = gpd.GeoDataFrame.from_features(list(results), crs=green_src.crs)
 
         # Dissolve all individual polygons into one multipart polygon
-        unified_polygon = gdf.dissolve()
+        ndwi_water_polygon = gdf.dissolve()
+
+        # Check the EPSG (prints the code, e.g., 32629)
+        print(f"Current EPSG: {ndwi_water_polygon.crs.to_epsg()}")
+
+        # Transform to EPSG 2157 (Irish Transverse Mercator)
+        undwi_water_polygon = ndwi_water_polygon.to_crs(epsg=2157)
+
+        # Verify the transformation
+        print(f"New EPSG: {ndwi_water_polygon.crs.to_epsg()}")
 
         # 5. Save output
-        unified_polygon.to_file(output_path)
+        ndwi_water_polygon.to_file(output_path)
         print(f"Surface water polygon saved to {output_path}")
 
 
