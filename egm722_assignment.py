@@ -155,7 +155,7 @@ red_path = base_path_sen2 + 'T29UNA_20250521T114401_B04_10m.jp2'
 nearir_path = base_path_sen2 + 'T29UNA_20250521T114401_B08_10m.jp2'
 
 # Calculate NDWI from Sentinel-2 raster data
-def calculate_ndwi(green_path, nearir_path, output_path = 'sen2_ndwi', sen2_ndwi = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\sen2_ndwi.tif'):
+def calculate_ndwi(green_path, nearir_path, output_path = 'ndwi_water_bodies', ndwi_water_bodies = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\ndwi_water_bodies.shp', threshold = 0.2):
     # Open the Green (B3) and NIR (B8) bands
     with rio.open(green_path) as green_src, rio.open(nearir_path) as nearir_src:
         # Read the data as float32 to allow for decimal results and handle NaNs
@@ -168,18 +168,27 @@ def calculate_ndwi(green_path, nearir_path, output_path = 'sen2_ndwi', sen2_ndwi
         # Calculate NDWI
         ndwi = (green - nir) / (green + nir)
 
-        # Update metadata for the output file
-        # We use the metadata from the green band as a template
-        meta = green_src.meta.copy()
-        meta.update({
-            'driver': 'GTiff',
-            'dtype': 'float32',
-            'count': 1
-        })
+        # Create a binary mask where NDWI > threshold
+        # Values outside the threshold become 0, water becomes 1
+        water_mask = (ndwi > threshold).astype('int16')
 
-        # Write the result to a new GeoTIFF
-        with rio.open(output_path, 'w', **meta) as dst:
-            dst.write(ndwi, 1)
+        # Vectorize the mask (only the '1' values)
+        results = (
+            {'properties': {'raster_val': v}, 'geometry': s}
+            for i, (s, v) in enumerate(
+            shapes(water_mask, mask=water_mask == 1, transform=green_src.transform)
+        )
+        )
+
+        # 4. Convert to GeoDataFrame and dissolve into a single polygon
+        gdf = gpd.GeoDataFrame.from_features(list(results), crs=green_src.crs)
+
+        # Dissolve all individual polygons into one multipart polygon
+        unified_polygon = gdf.dissolve()
+
+        # 5. Save output
+        unified_polygon.to_file(output_path)
+        print(f"Surface water polygon saved to {output_path}")
 
 
 
