@@ -23,7 +23,7 @@ sac = gpd.read_file(file_path_sac)
 print(sac.head())
 
 # Check the coordinate reference system of the GeoDataFrame
-sac.crs
+print(sac.crs)
 
 # Generate the minimum rotated rectangle that covers the sac
 sac_area = sac.minimum_rotated_rectangle()
@@ -42,4 +42,36 @@ with rio.open(file_path_clc) as src:
 
     # Access metadata important for clc (CRS is usually EPSG:3035)
     print(src.crs)
+
+#Reproject CLC to ITM (CRS 2157)
+def reproject_to_itm(file_path_clc, output_path='clc_itm'):
+    dst_crs = 'EPSG:2157'
+
+    with rio.open(file_path_clc) as src:
+        # Calculate the transform and dimensions for the new CRS
+        transform, width, height = calculate_default_transform(
+            src.crs, dst_crs, src.width, src.height, *src.bounds)
+
+        # Update metadata for the output file
+        kwargs = src.meta.copy()
+        kwargs.update({
+            'crs': dst_crs,
+            'transform': transform,
+            'width': width,
+            'height': height
+        })
+
+        # Create the output file and perform the reprojection
+        with rio.open(clc_itm, 'w', **kwargs) as dst:
+            for i in range(1, src.count + 1):
+                reproject(
+                    source=rasterio.band(src, i),
+                    destination=rasterio.band(dst, i),
+                    src_transform=src.transform,
+                    src_crs=src.crs,
+                    dst_transform=transform,
+                    dst_crs=dst_crs,
+                    resampling=Resampling.nearest  # Use 'bilinear' or 'cubic' for continuous data
+                )
+    print(f"Reprojecting {file_path_clc} to {output_name}")
 
