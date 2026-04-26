@@ -148,9 +148,39 @@ def extract_habitats(clc_clipped, output_vector_path= 'peatland_habitats', peatl
 # Define the path to the specific band files (.jp2)
 base_path_sen2 = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\Satellite_Data\Sentinel_2_Data\S2A_MSIL2A_20250521.SAFE\S2A_MSIL2A_20250521.SAFE\GRANULE\L2A_T29UNA_A051772_20250521T114403\IMG_DATA\R10m'
 
-# Specific band (Red, Green & Blue) file names
+# Specific band (Red, Green, Blue & NIR) file names
 blue_path = base_path_sen2 + 'T29UNA_20250521T114401_B02_10m.jp2'
 green_path = base_path_sen2 + 'T29UNA_20250521T114401_B03_10m.jp2'
 red_path = base_path_sen2 + 'T29UNA_20250521T114401_B04_10m.jp2'
+nearir_path = base_path_sen2 + 'T29UNA_20250521T114401_B08_10m.jp2'
+
+# Calculate NDWI from Sentinel-2 raster data
+def calculate_ndwi(green_path, nearir_path, output_path = 'sen2_ndwi', sen2_ndwi = r'C:\GIS_MSc\2026\EGM722_Programming_for_GIS&Remote_Sensing\Assignment\Spatial_Data\assignment_output_data\sen2_ndwi.tif'):
+    # Open the Green (B3) and NIR (B8) bands
+    with rio.open(green_path) as green_src, rio.open(nearir_path) as nearir_src:
+        # Read the data as float32 to allow for decimal results and handle NaNs
+        green = green_src.read(1).astype('float32')
+        nir = nearir_src.read(1).astype('float32')
+
+        # Ignore division by zero errors
+        np.seterr(divide='ignore', invalid='ignore')
+
+        # Calculate NDWI
+        ndwi = (green - nir) / (green + nir)
+
+        # Update metadata for the output file
+        # We use the metadata from the green band as a template
+        meta = green_src.meta.copy()
+        meta.update({
+            'driver': 'GTiff',
+            'dtype': 'float32',
+            'count': 1
+        })
+
+        # Write the result to a new GeoTIFF
+        with rio.open(output_path, 'w', **meta) as dst:
+            dst.write(ndwi, 1)
+
+
 
 
