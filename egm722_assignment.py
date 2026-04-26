@@ -75,3 +75,32 @@ def reproject_to_itm(file_path_clc, output_path='clc_itm'):
                 )
     print(f"Reprojecting {file_path_clc} to {output_name}")
 
+#Clip CLC to SAC
+def clip_clc(file_path_clc, file_path_sac, output_path= 'clc_clipped'):
+    # Load the SAC vector data
+    sac_df = gpd.read_file(file_path_sac)
+
+    # Open the raster data
+    with rio.open(file_path_clc) as src:
+        # Ensure the vector is in the same CRS as the raster
+        vector_df = vector_df.to_crs(src.crs)
+
+        # Get the geometry from the vector (mask expects a list of shapes)
+        shapes = vector_df.geometry.values
+
+        # Apply the mask/clip
+        # crop=True clips the output extent to the bounds of the shapes
+        out_image, out_transform = mask(src, shapes, crop=True)
+
+        # Update the metadata for the new clipped file
+        out_meta = src.meta.copy()
+        out_meta.update({
+            "driver": "GTiff",
+            "height": out_image.shape[1],
+            "width": out_image.shape[2],
+            "transform": out_transform
+        })
+
+        # Write the clipped raster to disk
+        with rio.open(output_path, "w", **out_meta) as dest:
+            dest.write(out_image)
